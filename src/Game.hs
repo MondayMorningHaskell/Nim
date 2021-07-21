@@ -1,7 +1,10 @@
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 
 module Game where
 
+import Control.Monad.IO.Class
 import Control.Monad.State
 import Text.Read (readMaybe)
 
@@ -15,6 +18,13 @@ newtype GameMonad a = GameMonad
   { gameAction :: StateT (Player, Int) IO a
   } deriving (Functor, Applicative, Monad)
 
+instance MonadIO GameMonad where
+  liftIO action = GameMonad (lift action)
+
+instance MonadState (Player, Int) GameMonad where
+  get = GameMonad get
+  put = GameMonad . put
+
 playGame :: GameMonad Player
 playGame = do
   promptPlayer
@@ -23,17 +33,17 @@ playGame = do
   case validateResult of
     Nothing -> playGame
     Just i -> do
-      (currentPlayer, currentVal) <- GameMonad get
+      (currentPlayer, currentVal) <- get
       let nextVal = currentVal + i
       if nextVal == 100
         then return currentPlayer
-        else GameMonad (put (nextPlayer currentPlayer, nextVal)) >> playGame
+        else (put (nextPlayer currentPlayer, nextVal)) >> playGame
 
 validateMove :: String -> GameMonad (Maybe Int)
 validateMove input = case readMaybe input :: Maybe Int of
   Nothing -> logMessage "Invalid move, cannot read as integer" >> return Nothing
   Just i -> do
-    currentVal <- GameMonad $ gets snd
+    currentVal <- gets snd
     if i > 10 || i < 0
       then logMessage "Invalid move, cannot be > 10 or < 0" >> return Nothing
       else if currentVal + i > 100
@@ -42,15 +52,15 @@ validateMove input = case readMaybe input :: Maybe Int of
 
 promptPlayer :: GameMonad ()
 promptPlayer = do
-  (currentPlayer, currentVal) <- GameMonad get
+  (currentPlayer, currentVal) <- get
   logMessage $ "Current Value: " ++ show currentVal
   logMessage $ show currentPlayer ++ "'s move."
 
 logMessage :: String -> GameMonad ()
-logMessage = GameMonad . lift . putStrLn
+logMessage = liftIO . putStrLn
 
 readInput :: GameMonad String
-readInput = GameMonad $ lift $ getLine
+readInput = liftIO getLine
 
 runGame :: IO ()
 runGame = do
