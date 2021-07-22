@@ -3,7 +3,21 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    cabal-file:
+      size: 5151
+      sha256: bb072520edaf40d6555123c693bbbcb6618454fd3df577e60a4be507b71cb65b
+    name: freer-effects
+    version: 0.3.0.0
+    git: https://github.com/jhb563/freer-effects.git
+    pantry-tree:
+      size: 2582
+      sha256: 5e21599ae4402ab19238ec9055cf102aa625457dd95583b3b70ffe1f08e2fdb8
+    commit: 39a7e62cc049d43d36ece4ac24ba19e545f0b726
+  original:
+    git: https://github.com/jhb563/freer-effects.git
+    commit: 39a7e62cc049d43d36ece4ac24ba19e545f0b726
 snapshots:
 - completed:
     size: 585603
