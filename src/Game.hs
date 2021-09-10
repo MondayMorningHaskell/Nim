@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
@@ -25,6 +26,14 @@ instance MonadState (Player, Int) GameMonad where
   get = GameMonad get
   put = GameMonad . put
 
+class MonadTerminal m where
+  logMessage :: String -> m ()
+  getInputLine :: m String
+
+instance MonadTerminal GameMonad where
+  logMessage = liftIO . putStrLn
+  getInputLine = liftIO getLine
+
 playGame :: GameMonad Player
 playGame = do
   promptPlayer
@@ -39,7 +48,7 @@ playGame = do
         then return currentPlayer
         else (put (nextPlayer currentPlayer, nextVal)) >> playGame
 
-validateMove :: String -> GameMonad (Maybe Int)
+validateMove :: (MonadTerminal m, MonadState (Player, Int) m) => String -> m (Maybe Int)
 validateMove input = case readMaybe input :: Maybe Int of
   Nothing -> logMessage "Invalid move, cannot read as integer" >> return Nothing
   Just i -> do
@@ -50,17 +59,14 @@ validateMove input = case readMaybe input :: Maybe Int of
         then logMessage "Invalid move, total cannot exceed 100" >> return Nothing
         else return (Just i)
 
-promptPlayer :: GameMonad ()
+promptPlayer :: (MonadTerminal m, MonadState (Player, Int) m) => m ()
 promptPlayer = do
   (currentPlayer, currentVal) <- get
   logMessage $ "Current Value: " ++ show currentVal
   logMessage $ show currentPlayer ++ "'s move."
 
-logMessage :: String -> GameMonad ()
-logMessage = liftIO . putStrLn
-
-readInput :: GameMonad String
-readInput = liftIO getLine
+readInput :: (MonadTerminal m) => m String
+readInput = getInputLine
 
 runGame :: IO ()
 runGame = do
